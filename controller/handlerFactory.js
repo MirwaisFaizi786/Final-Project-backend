@@ -73,12 +73,13 @@ exports.getAll = Model => catchAsync(async (req, res, next) => {
     // const doc = await features.query.explain(); // For debugging to check query performance
 
 
-
+    console.log(doc.length)
     res.status(200).json({
         status: 'success',
         results: doc.length,
-        data: {
-            data: doc
-        }
+        doc,
+        // data: {
+        //     data: doc
+        // }
     })
 })

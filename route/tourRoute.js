@@ -6,7 +6,6 @@ const { protect, restrictTo } = require('../controller/authController');
 const reviewRoute = require('./reviewRoute');
 const router = express.Router();
 
-
 // POST /tours/234fad4/reviews
 // We want after getting the tour id , then we pass tour id to review route then review route will get tour id and create review and reviewRout must use the merge params in review route
 router.use("/:tourId/reviews",reviewRoute);

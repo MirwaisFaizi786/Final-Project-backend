@@ -1,3 +1,4 @@
+const multer = require("multer");
 const { promisify } = require("util");
 const crypto = require("crypto");
 const User = require("../model/userModel");
@@ -6,6 +7,30 @@ const AppError = require("../utils/appError");
 const jwt = require("jsonwebtoken");
 const sendEmail = require("../utils/email");
 
+
+
+const multerStorage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, 'public/img/users');
+    },
+    filename: (req, file, cb) => {
+        const ext = file.mimetype.split('/')[1];
+        cb(null, `user-${req.user.id}-${Date.now()}.${ext}`);
+    }
+});
+
+const multerFilter = (req, file, cb) => {
+    if (file.mimetype.startsWith('image')) {
+        cb(null, true);
+    } else {
+        cb(new AppError('Not an image! Please upload only images.', 400), false);
+    }
+}
+
+
+const upload = multer({  storage: multerStorage, fileFilter: multerFilter });
+
+exports.uploadUserPhoto = upload.single('photo');
 
 const filterObj = (obj, ...allowedFields) => {
     const newObj = {};
@@ -22,6 +47,9 @@ const sendToken = (id) => {
     })
     return token
 }
+
+
+
 const createSendToken = (user, statusCode, res) => {
     const token = sendToken(user._id);
 
@@ -36,12 +64,12 @@ const createSendToken = (user, statusCode, res) => {
     res.cookie('jwt', token, cookieOptions);
 
     user.password = undefined;
-    
+        
     res.status(statusCode).json({
         status: 'success',
         token,
         data: {
-            user
+            user,
         }
     })
 }
@@ -69,7 +97,7 @@ exports.login = catchAsync(async (req, res, next) => {
     if (!user || !(await user.correctPassword(password, user.password))) {
         return next(new AppError('Incorrect email or password', 401));
     }
-
+    
     createSendToken(user, 200, res);
 })
 
@@ -80,6 +108,8 @@ exports.protect = catchAsync(async (req, res, next) => {
 
     if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
         token = req.headers.authorization.split(' ')[1];
+    }else if(req.cookies.jwt) {
+        token = req.cookies.jwt
     }
 
     if (!token) {
@@ -193,12 +223,15 @@ exports.updatePassword = catchAsync(async (req, res, next) => {
 
 
 exports.updateMe = catchAsync(async (req, res, next) => {
+
+    console.log("req.file",req.file);
     // 1) Create error if user POSTs password data
     if (req.body.password || req.body.passwordConfirm) {
         return next(new AppError('This route is not for password updates. Please use /updateMyPassword.', 400));
     }
     // 2) Filtered out unwanted fields names that are not allowed to be updated
     const filteredBody = filterObj(req.body, 'name', 'email');
+    if(req.file) filteredBody.photo = req.file.filename;
     // 3) Update user document
     const updatedUser = await User.findByIdAndUpdate(req.user.id, filteredBody, {
         new: true,

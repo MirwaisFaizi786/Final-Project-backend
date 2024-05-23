@@ -7,15 +7,8 @@ process.on('uncaughtException', (err) => {
         process.exit(1);
     
 })
-const cors = require('cors');
 const app = require('./app');
 const { default: mongoose } = require('mongoose');
-
-
-app.use(cors({
-    origin: [ 'http://localhost:3001' ],
-    credentials: true,
-}));
 
 
 
