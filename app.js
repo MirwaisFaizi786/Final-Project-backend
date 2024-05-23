@@ -1,4 +1,5 @@
 const express = require('express');
+const cors = require('cors');
 const helmet = require('helmet');
 const mongoSanitize = require('express-mongo-sanitize');
 const xss = require('xss-clean');
@@ -10,9 +11,28 @@ const userRoute = require('./route/userRoute');
 const reviewRoute = require('./route/reviewRoute');
 const AppError = require('./utils/appError');
 const hpp = require('hpp');
+const cookieParser = require('cookie-parser');
+
+// CORS configuration
+app.use(cors({
+    origin: 'http://localhost:3001',
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+    credentials: true,
+    preflightContinue: false,
+    optionsSuccessStatus: 204
+}));
+
+app.options('*', cors()); // Enable pre-flight requests for all routes
 
 // 1) this body parser, will limiting requests body size to 10kb
 app.use(express.json({ limit: '10kb' }));
+// cookie parser
+app.use(cookieParser());
+
+app.use((req, res, next) => {
+    console.log(req.cookies);
+    next()
+})
 // 2) helmet will set security HTTP headers 
 app.use( helmet() );
 
@@ -35,20 +55,15 @@ const limiter = rateLimit({
     max: 100,
     windowMs: 60 * 60 * 1000,
     message: 'Too many requests from this IP, please try again in an hour!',
-    skip: (req, res) => {
-        console.log("req.ip",req.ip);
-        return req.ip === '127.0.0.1'
-    },
-    
-
+    // skip: (req, res) => {
+    //     return req.ip === '127.0.0.1'
+    // },
 })
 
 app.use('/api', limiter);
 app.use('/api/v1/users', userRoute);
 app.use('/api/v1/tours', tourRoute)
 app.use('/api/v1/reviews', reviewRoute)
-
-
 
 
 // app.all() means all the routes that are not defined in tourRoute
