@@ -15,7 +15,8 @@ const cookieParser = require('cookie-parser');
 
 // CORS configuration
 app.use(cors({
-    origin: 'http://localhost:3001',
+    origin: 'http://localhost:3000',
+    
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     credentials: true,
     preflightContinue: false,
@@ -25,7 +26,7 @@ app.use(cors({
 app.options('*', cors()); // Enable pre-flight requests for all routes
 
 // 1) this body parser, will limiting requests body size to 10kb
-app.use(express.json({ limit: '10kb' }));
+app.use(express.json({ limit: '10mb' }));
 // cookie parser
 app.use(cookieParser());
 
@@ -76,6 +77,9 @@ app.all('*', (req, res, next) => {
     
     next(new AppError(`Can't find ${req.originalUrl} on this server`, 404));
 })
+
+
+
 
 app.use( globalErrorHandler );
 
