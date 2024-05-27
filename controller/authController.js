@@ -1,4 +1,5 @@
 const multer = require("multer");
+const fs = require("fs");
 const { promisify } = require("util");
 const crypto = require("crypto");
 const User = require("../model/userModel");
@@ -28,9 +29,11 @@ const multerFilter = (req, file, cb) => {
 }
 
 
-const upload = multer({  storage: multerStorage, fileFilter: multerFilter });
+const upload = multer({ storage: multerStorage, fileFilter: multerFilter });
 
 exports.uploadUserPhoto = upload.single('photo');
+
+
 
 const filterObj = (obj, ...allowedFields) => {
     const newObj = {};
@@ -50,7 +53,7 @@ const sendToken = (id) => {
 
 
 
-const createSendToken = (user, statusCode, res) => {
+const createSendToken = async (user, statusCode, res) => {
     const token = sendToken(user._id);
 
     const cookieOptions = {
@@ -64,12 +67,12 @@ const createSendToken = (user, statusCode, res) => {
     res.cookie('jwt', token, cookieOptions);
 
     user.password = undefined;
-        
+
     res.status(statusCode).json({
         status: 'success',
         token,
         data: {
-            user,
+            user
         }
     })
 }
@@ -97,7 +100,7 @@ exports.login = catchAsync(async (req, res, next) => {
     if (!user || !(await user.correctPassword(password, user.password))) {
         return next(new AppError('Incorrect email or password', 401));
     }
-    
+
     createSendToken(user, 200, res);
 })
 
@@ -108,7 +111,7 @@ exports.protect = catchAsync(async (req, res, next) => {
 
     if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
         token = req.headers.authorization.split(' ')[1];
-    }else if(req.cookies.jwt) {
+    } else if (req.cookies.jwt) {
         token = req.cookies.jwt
     }
 
@@ -137,7 +140,7 @@ exports.protect = catchAsync(async (req, res, next) => {
 
     next();
 
-}) 
+})
 
 exports.restrictTo = (...roles) => {
 
@@ -154,14 +157,14 @@ exports.forgotPassword = catchAsync(async (req, res, next) => {
     // 1) Get user based on POSTed email
     const user = await User.findOne({ email: req.body.email });
 
-    
+
     if (!user) {
         return next(new AppError('There is no user with email address.', 404));
-    }    
+    }
     // 2) Generate the random reset token
-    const resetToken =  user.createPasswordResetToken();
-   
-    await user.save( { validateBeforeSave: false });
+    const resetToken = user.createPasswordResetToken();
+
+    await user.save({ validateBeforeSave: false });
     // 3) Send it to user's email    
     const resetURL = `${req.protocol}://${req.get('host')}/api/v1/users/resetPassword/${resetToken}`;
     const message = `Forgot your password? Submit a PATCH request with your new password and passwordConfirm to: ${resetURL}.\n If you didn't forget your password, please ignore this email!`;
@@ -181,12 +184,12 @@ exports.forgotPassword = catchAsync(async (req, res, next) => {
         user.passwordResetExpires = undefined;
         await user.save({ validateBeforeSave: false });
         return next(new AppError('There was an error sending the email. Try again later!'), 500);
-    } 
+    }
 
 })
 
 exports.resetPassword = catchAsync(async (req, res, next) => {
-    console.log("req.params.token",req.params.token);
+    console.log("req.params.token", req.params.token);
     // 1) Get user based on the token
     const hashedToken = crypto.createHash('sha256').update(req.params.token).digest('hex');
     const user = await User.findOne({ passwordResetToken: hashedToken, passwordResetExpires: { $gt: Date.now() } });
@@ -201,7 +204,7 @@ exports.resetPassword = catchAsync(async (req, res, next) => {
     await user.save();
     // 3) Update changedPasswordAt property for the user
     // 4) Log the user in, send JWT
-    
+
     createSendToken(user, 200, res);
 })
 
@@ -218,29 +221,31 @@ exports.updatePassword = catchAsync(async (req, res, next) => {
     user.passwordConfirm = req.body.passwordConfirm;
     await user.save();
     // 4) Log user in, send JWT
-    createSendToken(user, 200, res); 
-} )
+    createSendToken(user, 200, res);
+})
 
 
 exports.updateMe = catchAsync(async (req, res, next) => {
-
-    console.log("req.file",req.file);
+    console.log("req.file", req.file);
     // 1) Create error if user POSTs password data
     if (req.body.password || req.body.passwordConfirm) {
         return next(new AppError('This route is not for password updates. Please use /updateMyPassword.', 400));
     }
     // 2) Filtered out unwanted fields names that are not allowed to be updated
     const filteredBody = filterObj(req.body, 'name', 'email');
-    if(req.file) filteredBody.photo = req.file.filename;
+    if (req.file) filteredBody.photo = req.file.filename;
     // 3) Update user document
     const updatedUser = await User.findByIdAndUpdate(req.user.id, filteredBody, {
         new: true,
         runValidators: true
     });
+    const jsonResponse = await getImageDataAsBase64(`./public/img/users/${updatedUser.photo}`).then((data) => data);
+
     res.status(200).json({
         status: 'success',
         data: {
-            user: updatedUser
+            user: updatedUser,
+            image: jsonResponse
         }
     })
 })

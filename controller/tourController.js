@@ -1,9 +1,62 @@
+const multer = require('multer');
+const fs = require('fs');
 const Tour = require('../model/tourModel');
 const APIFeatures = require('../utils/apiFeature');
 const AppError = require('../utils/appError');
 const catchAsync = require('../utils/catchAsync');
 
 const factory = require('./handlerFactory');
+
+
+// Multipal files upload============================================== 
+const multerStorage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, 'public/img/tours');
+    },
+    filename: (req, file, cb) => {
+        const ext = file.mimetype.split('/')[1];
+        cb(null, `tour-${Date.now()}.${ext}`);
+    }
+});
+const multerFilter = (req, file, cb) => {
+    if (file.mimetype.startsWith('image')) {
+        cb(null, true);
+    } else {
+        cb(new AppError('Not an image! Please upload only images.', 400), false);
+    }
+}
+const upload = multer({ storage: multerStorage, fileFilter: multerFilter });
+exports.uploadTourPhoto = upload.fields([{ name: 'imageCover', maxCount: 1 }, { name: 'images', maxCount: 5 }]);
+// end of multiple files upload=======================================
+
+
+function getImageDataAsBase64(imagePath) {
+    return new Promise((resolve, reject) => {
+        fs.access(imagePath, fs.constants.F_OK, (err) => {
+            if (err) {
+                if (err.code === 'ENOENT') {
+                    resolve(''); // Return empty string if file does not exist
+                } else {
+                    reject(err); // Handle other errors
+                }
+            } else {
+                fs.readFile(imagePath, (err, data) => {
+                    if (err) {
+                        reject(err);
+                    } else {
+                        if (data.length === 0) {
+                            resolve(''); // Return empty string if file is empty
+                        } else {
+                            resolve(Buffer.from(data).toString('base64'));
+                        }
+                    }
+                });
+            }
+        });
+    });
+}
+
+
 exports.aliasTopTours = (req, res, next) => {
     req.query.limit = '5';
     req.query.sort = '-ratingsAverage,price';
@@ -13,7 +66,61 @@ exports.aliasTopTours = (req, res, next) => {
 
 
 
-exports.getAllTours = factory.getAll(Tour);
+// exports.getAllTours = factory.getAll(Tour);
+
+exports.getAllTours = catchAsync(async (req, res, next) => {
+    // To allow for nested GET reviews on tour (hack)
+    let filter = {};
+    if (req.params.tourId) filter = { tour: req.params.tourId }
+    const features = new APIFeatures(Tour.find( filter), req.query)
+        .filter()
+        .sort()
+        .limitFields()
+        .paginate();
+    const doc = await features.query;
+    // const doc = await features.query.explain(); // For debugging to check query performance
+
+
+    console.log(doc.length)
+    const processTours = async (docs) => {
+        const tours = await Promise.all(docs.map(async (tour) => {
+            const imageCover = await getImageDataAsBase64(`./public/img/tours/${tour.imageCover}`).catch(() => tour.imageCover);
+            // const images = await Promise.all(tour.images.map(async (image) => {
+            //     return await getImageDataAsBase64(`./public/img/tours/${image}`).catch(() => image);
+            // }));
+    
+            return {
+                _id: tour._id,
+                name: tour.name,
+                price: tour.price,
+                imageCover,
+                // images,
+                difficulty: tour.difficulty,
+                duration: tour.duration,
+                summary: tour.summary,
+                maxGroupSize: tour.maxGroupSize,
+                rating: tour.ratingsAverage,
+                ratingsQuantity: tour.ratingsQuantity,
+                startLocation: tour.startLocation,
+                locations: tour.locations
+
+            };
+        }));
+        return tours;
+    };
+
+    res.status(200).json({
+        status: 'success get all Tours',
+        results: doc.length,
+        data: {
+            data: await processTours(doc)
+        }
+    })
+})
+
+
+
+
 // catchAsync( async (req, res , next) => {
    
 //         // // QUERY LOOK LIKE THIS { difficulty: 'easy', ratingsAverage: { lte: 4.5 }, duration: { gte: 5 } }
@@ -152,15 +259,101 @@ exports.getMonthlyPlan = catchAsync( async (req, res, next) => {
     
 } )
 
-exports.getTour = factory.getOne(Tour, { path: 'reviews' });
-exports.createTour = factory.createOne(Tour);
+// exports.getTour = factory.getOne(Tour, { path: 'reviews' });
+
+
+exports.getTour =  catchAsync(async (req, res, next) => {
+    let tour = await Tour.findById(req.params.id).populate("reviews");
+    if (!tour) {
+        return next(new AppError('No document found with that ID Exact ', 404));
+    }
+    const processTour = async (docs) => {
+            const imageCover = await getImageDataAsBase64(`./public/img/tours/${tour.imageCover}`).catch(() => tour.imageCover);
+            const images = await Promise.all(tour.images.map(async (image) => {
+                return await getImageDataAsBase64(`./public/img/tours/${image}`).catch(() => image);
+            }));
+    
+            return {
+                _id: tour._id,
+                name: tour.name,
+                price: tour.price,
+                description: tour.description,
+                imageCover,
+                images,
+                difficulty: tour.difficulty,
+                duration: tour.duration,
+                summary: tour.summary,
+                maxGroupSize: tour.maxGroupSize,
+                rating: tour.ratingsAverage,
+                ratingsQuantity: tour.ratingsQuantity,
+                startLocation: tour.startLocation,
+                locations: tour.locations,
+                guides: tour.guides,
+                startDates: tour.startDates,
+                reviews: tour.reviews,
+                createdAt: tour.createdAt,
+
+
+            };
+    };
+
+    res.status(200).json({
+        status: 'success',
+        data: {
+            data: await processTour(tour)
+        }
+    })
+})
+
+
+
+
+// exports.createTour = factory.createOne(Tour);
 exports.updateTour = factory.updateOne(Tour);
 exports.deleteTour = factory.deleteOne(Tour);
 
 
+exports.createTour = catchAsync(async (req, res, next) => {
+    console.log("req.body ================= ", req.body);
+    console.log("req.files ================= ", req.body.startLocation);
 
+    const doc = await Tour.create({
+        name: req.body.name,
+        duration: req.body.duration,
+        maxGroupSize: req.body.maxGroupSize,
+        difficulty: req.body.difficulty,
+        ratingsAverage: req.body.ratingsAverage,
+        ratingsQuantity: req.body.ratingsQuantity,
+        price: req.body.price,
+        priceDiscount: req.body.priceDiscount,
+        summary: req.body.summary,
+        description: req.body.description,
+        startLocation: req.body.startLocation, //req.body.startLocation,
+        locations:  JSON.parse(req.body.locations), //req.body.locations,
+        startDates: req.body.startDates.split(',').map(d => new Date(d)),
+        images: req.files.images.map(a => a.filename),
+        imageCover: req.files.imageCover[0].filename,
+    });
+    res.status(201).json({
+        status: 'success',
+        data: {
+            data: doc
+        }
+    })
+})
 
-
+exports.addImage= catchAsync( async (req, res, next) => {
+    const file = req.files;
+    console.log("file name ================= ", req.files.imageCover[0].filename);
+    if(!file) {
+        return next(new AppError('Please upload a file', 400));
+    }
+    res.status(200).json({
+        status: 'success',
+        data: file
+    })
+    
+} )
 
 
 
