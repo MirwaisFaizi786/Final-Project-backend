@@ -1,7 +1,7 @@
 
 
 const express = require('express');
-const { getAllTours, createTour, getTour, updateTour, deleteTour, aliasTopTours, getTourStats, getMonthlyPlan, addImage, uploadTourPhoto, uploadTourSignleImage } = require('../controller/tourController');
+const { getAllTours, createTour, getTour, updateTour, deleteTour, aliasTopTours, getTourStats, getMonthlyPlan, addImage, uploadTourPhoto, uploadTourSignleImage, searchForTour } = require('../controller/tourController');
 const { protect, restrictTo } = require('../controller/authController');
 const reviewRoute = require('./reviewRoute');
 const router = express.Router();
@@ -14,7 +14,7 @@ router.use("/:tourId/reviews",reviewRoute);
 //Test ===========================================
 router.post("/addImage",uploadTourPhoto, addImage);
 
-
+router.get("/searchForTour", searchForTour);
 router.route("/top-5-cheap").get(aliasTopTours, getAllTours);
 router.route("/tours-stats").get(getTourStats);
 router.route("/monthly-plan/:year").get(getMonthlyPlan);

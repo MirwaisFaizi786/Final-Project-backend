@@ -43,8 +43,8 @@ const filterObj = (obj, ...allowedFields) => {
     return newObj
 }
 
-const sendToken = (id) => {
-    const token = jwt.sign({ id: id }, process.env.JWT_SECRET, {
+const sendToken = (user) => {
+    const token = jwt.sign({ id: user._id,role:user.role }, process.env.JWT_SECRET, {
         expiresIn: process.env.JWT_EXPIRES
 
     })
@@ -54,7 +54,8 @@ const sendToken = (id) => {
 
 
 const createSendToken = async (user, statusCode, res) => {
-    const token = sendToken(user._id);
+    console.log("user ---------------------------", user);
+    const token = sendToken(user);
 
     const cookieOptions = {
         expires: new Date(

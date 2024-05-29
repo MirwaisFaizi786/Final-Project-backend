@@ -13,6 +13,7 @@ const AppError = require('./utils/appError');
 const hpp = require('hpp');
 const cookieParser = require('cookie-parser');
 
+
 // CORS configuration
 app.use(cors({
     origin: 'http://localhost:3000',
@@ -23,17 +24,18 @@ app.use(cors({
     optionsSuccessStatus: 204
 }));
 
+
 app.options('*', cors()); // Enable pre-flight requests for all routes
 
 // 1) this body parser, will limiting requests body size to 10kb
 app.use(express.json({ limit: '10mb' }));
 // cookie parser
 app.use(cookieParser());
-
-app.use((req, res, next) => {
-    console.log(req.cookies);
-    next()
-})
+app.use(express.static(`${__dirname}/public`));
+// app.use((req, res, next) => {
+//     console.log("req.cookies",req.cookies);
+//     next()
+// })
 // 2) helmet will set security HTTP headers 
 app.use( helmet() );
 

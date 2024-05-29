@@ -66,57 +66,42 @@ exports.aliasTopTours = (req, res, next) => {
 
 
 
-// exports.getAllTours = factory.getAll(Tour);
+ exports.getAllTours = factory.getAll(Tour);
 
-exports.getAllTours = catchAsync(async (req, res, next) => {
-    // To allow for nested GET reviews on tour (hack)
-    let filter = {};
-    if (req.params.tourId) filter = { tour: req.params.tourId }
-    const features = new APIFeatures(Tour.find( filter), req.query)
-        .filter()
-        .sort()
-        .limitFields()
-        .paginate();
-    const doc = await features.query;
-    // const doc = await features.query.explain(); // For debugging to check query performance
+// exports.getAllTours = catchAsync(async (req, res, next) => {
+//     // To allow for nested GET reviews on tour (hack)
+//     let filter = {};
+//     if (req.params.tourId) filter = { tour: req.params.tourId }
+//     const features = new APIFeatures(Tour.find( filter), req.query)
+//         .filter()
+//         .sort()
+//         .limitFields()
+//         .paginate();
+//     const doc = await features.query;
+//     // const doc = await features.query.explain(); // For debugging to check query performance
 
 
-    console.log(doc.length)
-    const processTours = async (docs) => {
-        const tours = await Promise.all(docs.map(async (tour) => {
-            const imageCover = await getImageDataAsBase64(`./public/img/tours/${tour.imageCover}`).catch(() => tour.imageCover);
-            // const images = await Promise.all(tour.images.map(async (image) => {
-            //     return await getImageDataAsBase64(`./public/img/tours/${image}`).catch(() => image);
-            // }));
+//     console.log("doc",doc.length)
+//     const processTours = async (docs) => {
+//         const tours = await Promise.all(docs.map(async (tour) => {
+//             // const imageCover = await getImageDataAsBase64(`./public/img/tours/${tour.imageCover}`).catch(() => tour.imageCover);
+//             // const images = await Promise.all(tour.images.map(async (image) => {
+//             //     return await getImageDataAsBase64(`./public/img/tours/${image}`).catch(() => image);
+//             // }));
     
-            return {
-                _id: tour._id,
-                name: tour.name,
-                price: tour.price,
-                imageCover,
-                // images,
-                difficulty: tour.difficulty,
-                duration: tour.duration,
-                summary: tour.summary,
-                maxGroupSize: tour.maxGroupSize,
-                rating: tour.ratingsAverage,
-                ratingsQuantity: tour.ratingsQuantity,
-                startLocation: tour.startLocation,
-                locations: tour.locations
+//             return tours
+//         }));
+//         return tours;
+//     };
 
-            };
-        }));
-        return tours;
-    };
-
-    res.status(200).json({
-        status: 'success get all Tours',
-        results: doc.length,
-        data: {
-            data: await processTours(doc)
-        }
-    })
-})
+//     res.status(200).json({
+//         status: 'success get all Tours',
+//         results: doc.length,
+//         data: {
+//             data: await processTours(doc)
+//         }
+//     })
+// })
 
 
 
@@ -259,51 +244,51 @@ exports.getMonthlyPlan = catchAsync( async (req, res, next) => {
     
 } )
 
-// exports.getTour = factory.getOne(Tour, { path: 'reviews' });
+exports.getTour = factory.getOne(Tour, { path: 'reviews' });
 
 
-exports.getTour =  catchAsync(async (req, res, next) => {
-    let tour = await Tour.findById(req.params.id).populate("reviews");
-    if (!tour) {
-        return next(new AppError('No document found with that ID Exact ', 404));
-    }
-    const processTour = async (docs) => {
-            const imageCover = await getImageDataAsBase64(`./public/img/tours/${tour.imageCover}`).catch(() => tour.imageCover);
-            const images = await Promise.all(tour.images.map(async (image) => {
-                return await getImageDataAsBase64(`./public/img/tours/${image}`).catch(() => image);
-            }));
+// exports.getTour =  catchAsync(async (req, res, next) => {
+//     let tour = await Tour.findById(req.params.id).populate("reviews");
+//     if (!tour) {
+//         return next(new AppError('No document found with that ID Exact ', 404));
+//     }
+//     const processTour = async (docs) => {
+//             const imageCover = await getImageDataAsBase64(`./public/img/tours/${tour.imageCover}`).catch(() => tour.imageCover);
+//             const images = await Promise.all(tour.images.map(async (image) => {
+//                 return await getImageDataAsBase64(`./public/img/tours/${image}`).catch(() => image);
+//             }));
     
-            return {
-                _id: tour._id,
-                name: tour.name,
-                price: tour.price,
-                description: tour.description,
-                imageCover,
-                images,
-                difficulty: tour.difficulty,
-                duration: tour.duration,
-                summary: tour.summary,
-                maxGroupSize: tour.maxGroupSize,
-                rating: tour.ratingsAverage,
-                ratingsQuantity: tour.ratingsQuantity,
-                startLocation: tour.startLocation,
-                locations: tour.locations,
-                guides: tour.guides,
-                startDates: tour.startDates,
-                reviews: tour.reviews,
-                createdAt: tour.createdAt,
+//             return {
+//                 _id: tour._id,
+//                 name: tour.name,
+//                 price: tour.price,
+//                 description: tour.description,
+//                 imageCover,
+//                 images,
+//                 difficulty: tour.difficulty,
+//                 duration: tour.duration,
+//                 summary: tour.summary,
+//                 maxGroupSize: tour.maxGroupSize,
+//                 ratingsAverage: tour.ratingsAverage,
+//                 ratingsQuantity: tour.ratingsQuantity,
+//                 startLocation: tour.startLocation,
+//                 locations: tour.locations,
+//                 guides: tour.guides,
+//                 startDates: tour.startDates,
+//                 reviews: tour.reviews,
+//                 createdAt: tour.createdAt,
 
 
-            };
-    };
+//             };
+//     };
 
-    res.status(200).json({
-        status: 'success',
-        data: {
-            data: await processTour(tour)
-        }
-    })
-})
+//     res.status(200).json({
+//         status: 'success',
+//         data: {
+//             data: await processTour(tour)
+//         }
+//     })
+// })
 
 
 
@@ -315,7 +300,7 @@ exports.deleteTour = factory.deleteOne(Tour);
 
 exports.createTour = catchAsync(async (req, res, next) => {
     console.log("req.body ================= ", req.body);
-    console.log("req.files ================= ", req.body.startLocation);
+    console.log("req.files ================= ", JSON.stringify(req.body.startLocation));
 
     const doc = await Tour.create({
         name: req.body.name,
@@ -328,7 +313,7 @@ exports.createTour = catchAsync(async (req, res, next) => {
         priceDiscount: req.body.priceDiscount,
         summary: req.body.summary,
         description: req.body.description,
-        startLocation: req.body.startLocation, //req.body.startLocation,
+        startLocation: JSON.parse(req.body.startLocation ), //req.body.startLocation,
         locations:  JSON.parse(req.body.locations), //req.body.locations,
         startDates: req.body.startDates.split(',').map(d => new Date(d)),
         images: req.files.images.map(a => a.filename),
@@ -355,5 +340,43 @@ exports.addImage= catchAsync( async (req, res, next) => {
     
 } )
 
-
-
+// Utility function to build query
+const buildQuery = (queryParams) => {
+    const query = {};
+  
+    if (queryParams.name) {
+      query.name = { $regex: queryParams.name, $options: 'i' }; // Case-insensitive regex search
+    }
+    if (queryParams.difficulty) {
+      query.difficulty = queryParams.difficulty;
+    }
+    if (queryParams.minPrice && queryParams.maxPrice) {
+      query.price = { $gte: queryParams.minPrice, $lte: queryParams.maxPrice };
+    } else if (queryParams.minPrice) {
+      query.price = { $gte: queryParams.minPrice };
+    } else if (queryParams.maxPrice) {
+      query.price = { $lte: queryParams.maxPrice };
+    }
+    if (queryParams.startLocation) {
+      query['startLocation.address'] = { $regex: queryParams.startLocation, $options: 'i' };
+    }
+    if (queryParams.ratingsAverage) {
+      query.ratingsAverage = { $gte: queryParams.ratingsAverage };
+    }
+  
+    return query;
+  };
+  
+exports.searchForTour = catchAsync(async (req, res, next) => {
+    const queryObject = buildQuery(req.query);
+      const tours = await Tour.find(queryObject);
+      res.status(200).json({
+        status: 'success',
+        results: tours.length,
+        data: {
+          tours
+        }
+      });
+})
+      
+  

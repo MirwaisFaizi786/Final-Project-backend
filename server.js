@@ -2,7 +2,7 @@
 const dotenv = require('dotenv');
 dotenv.config();
 process.on('uncaughtException', (err) => {
-    console.log(err.name, err.message);
+    console.log(" error from server", err.name, err.message);
     // Close server and exit process with failure on uncaught exception 
         process.exit(1);
     

@@ -20,26 +20,26 @@ exports.getMe = (req, res, next) => {
     next(); 
 }
 exports.getAllUsers = factory.getAll(User);
-// exports.getUser = factory.getOne(User);
+exports.getUser = factory.getOne(User);
 exports.deleteUser = factory.deleteOne(User);
 exports.updateUser = factory.updateOne(User);
 exports.createUser = factory.createOne(User);
 
 
 
-exports.getUser = catchAsync(async (req, res, next) => {
-    let doc = await User.findById(req.params.id);
-    if (!doc) {
-        return next(new AppError('No document found with that ID Exact ', 404));
-    }
-    res.status(200).json({
-        status: 'success',
-        data: {
-            data: doc,
-            image: await getImageDataAsBase64(`./public/img/users/${doc.photo}`).then((data) => data)
-        }
-    })
-})
+// exports.getUser = catchAsync(async (req, res, next) => {
+//     let doc = await User.findById(req.params.id);
+//     if (!doc) {
+//         return next(new AppError('No document found with that ID Exact ', 404));
+//     }
+//     res.status(200).json({
+//         status: 'success',
+//         data: {
+//             data: doc,
+//             image: await getImageDataAsBase64(`./public/img/users/${doc.photo}`).then((data) => data)
+//         }
+//     })
+// })
 
 
 
