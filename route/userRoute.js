@@ -1,17 +1,19 @@
 const express = require('express');
 const { signup, login, forgotPassword, resetPassword, updatePassword, protect, updateMe, deleteMe, getAllUsers, restrictTo, uploadUserPhoto } = require('../controller/authController');
-const { deleteUser, updateUser, createUser, getMe, getUser } = require('../controller/userController');
+const { deleteUser, updateUser, createUser, getMe, getUser, getGuide, getNormalUserDetails} = require('../controller/userController');
 
 const router = express.Router();
 
 // user route
+
 
 // Authentication
 router.post('/signup', signup);
 router.post('/login', login);
 router.post('/forgotPassword', forgotPassword)
 router.patch('/resetPassword/:token', resetPassword) //resetPassword
-
+router.get("/normalUsers", getNormalUserDetails);
+router.get("/me/guide", getGuide);
 // This is middleware to protect all routes after this middleware. 
 router.use(protect)
 
