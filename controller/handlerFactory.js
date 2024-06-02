@@ -46,9 +46,10 @@ exports.createOne = Model => catchAsync(async (req, res, next) => {
 
 exports.getOne = (Model, popOptions) => catchAsync(async (req, res, next) => {
     let query = Model.findById(req.params.id);
-
+    
     if (popOptions) query = query.populate(popOptions);
     const doc = await query;
+    
     if (!doc) {
         return next(new AppError('No document found with that ID Exact ', 404));
     }
@@ -75,7 +76,7 @@ exports.getAll = Model => catchAsync(async (req, res, next) => {
     // const doc = await features.query.explain(); // For debugging to check query performance
 
 
-    console.log("doc get All",doc.length)
+    console.log(doc.length)
     res.status(200).json({
         status: 'success get all Tours',
         results: doc.length,

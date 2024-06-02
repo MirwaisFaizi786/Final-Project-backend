@@ -26,20 +26,22 @@ exports.updateUser = factory.updateOne(User);
 exports.createUser = factory.createOne(User);
 
 
+exports.getGuide = catchAsync(async (req, res, next) => {
+  let collection = await User.find({ role: "guide" });
+  res.status(200).json({
+    status: "success",
+    data: {
+      guides: collection,
+    },
+  });
+});
 
-// exports.getUser = catchAsync(async (req, res, next) => {
-//     let doc = await User.findById(req.params.id);
-//     if (!doc) {
-//         return next(new AppError('No document found with that ID Exact ', 404));
-//     }
-//     res.status(200).json({
-//         status: 'success',
-//         data: {
-//             data: doc,
-//             image: await getImageDataAsBase64(`./public/img/users/${doc.photo}`).then((data) => data)
-//         }
-//     })
-// })
-
-
-
+exports.getNormalUserDetails = catchAsync(async (req, res, next) => {
+  let collection = await User.find({ role: "user" });
+  res.status(200).json({
+    status: "success",
+    data: {
+      users: collection,
+    },
+  });
+});

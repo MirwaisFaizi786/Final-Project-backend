@@ -16,7 +16,7 @@ const multerStorage = multer.diskStorage({
     },
     filename: (req, file, cb) => {
         const ext = file.mimetype.split('/')[1];
-        cb(null, `user-${req.user.id}-${Date.now()}.${ext}`);
+        cb(null, `user-${Date.now()}.${ext}`);
     }
 });
 
@@ -54,7 +54,7 @@ const sendToken = (user) => {
 
 
 const createSendToken = async (user, statusCode, res) => {
-    console.log("user ---------------------------", user);
+    console.log("user token controller ---------------------------", user);
     const token = sendToken(user);
 
     const cookieOptions = {
@@ -79,6 +79,11 @@ const createSendToken = async (user, statusCode, res) => {
 }
 
 exports.signup = catchAsync(async (req, res, next) => {
+
+
+    console.log("req.body signup controller",req.body);
+    // console.log("req.file", req.file);
+
     const newUser = await User.create({
         name: req.body.name,
         email: req.body.email,
@@ -240,13 +245,11 @@ exports.updateMe = catchAsync(async (req, res, next) => {
         new: true,
         runValidators: true
     });
-    const jsonResponse = await getImageDataAsBase64(`./public/img/users/${updatedUser.photo}`).then((data) => data);
 
     res.status(200).json({
         status: 'success',
         data: {
-            user: updatedUser,
-            image: jsonResponse
+            user: updatedUser
         }
     })
 })

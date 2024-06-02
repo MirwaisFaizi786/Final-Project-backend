@@ -4,7 +4,7 @@ const helmet = require('helmet');
 const mongoSanitize = require('express-mongo-sanitize');
 const xss = require('xss-clean');
 const app = express();
-const rateLimit = require('express-rate-limit');
+// const rateLimit = require('express-rate-limit');
 const globalErrorHandler = require('./controller/errorController');
 const tourRoute = require('./route/tourRoute');
 const userRoute = require('./route/userRoute');
@@ -31,6 +31,7 @@ app.options('*', cors()); // Enable pre-flight requests for all routes
 app.use(express.json({ limit: '10mb' }));
 // cookie parser
 app.use(cookieParser());
+
 app.use(express.static(`${__dirname}/public`));
 // app.use((req, res, next) => {
 //     console.log("req.cookies",req.cookies);
@@ -54,16 +55,16 @@ app.use((req, res, next) => {
     next();
 });
 //1) Limit requests from same API || 100 requests from same IP in an hour
-const limiter = rateLimit({
-    max: 100,
-    windowMs: 60 * 60 * 1000,
-    message: 'Too many requests from this IP, please try again in an hour!',
-    // skip: (req, res) => {
-    //     return req.ip === '127.0.0.1'
-    // },
-})
+// const limiter = rateLimit({
+//     max: 100,
+//     windowMs: 60 * 60 * 1000,
+//     message: 'Too many requests from this IP, please try again in an hour!',
+//     // skip: (req, res) => {
+//     //     return req.ip === '127.0.0.1'
+//     // },
+// })
 
-app.use('/api', limiter);
+// app.use('/api', limiter);
 app.use('/api/v1/users', userRoute);
 app.use('/api/v1/tours', tourRoute)
 app.use('/api/v1/reviews', reviewRoute)
